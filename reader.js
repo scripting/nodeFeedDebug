@@ -1,4 +1,4 @@
-var myVersion = "0.40", myProductName = "nodeFeedDebug", myPort = 1388; 
+var myVersion = "0.40c", myProductName = "nodeFeedDebug", myPort = 1388;  
 
 var http = require ("http"); 
 var FeedParser = require ("feedparser");
@@ -20,7 +20,7 @@ var serverStats = {
 	};
 var flRiverChanged = false;
 
-var urlFeed = "http://www.radioopensource.org/feed/";
+var urlFeed = "http://scripting.com/rss.xml";
 
 function getItemDescription (item) {
 	var s = item.description;
@@ -161,16 +161,15 @@ function getFeed (urlfeed, callback) {
 		console.log ("Error reading feed.");
 		});
 	feedparser.on ("readable", function () {
-		var item = this.read (), flnew;
-		if (item ["source:outline"] != undefined) {
-			var jstruct = convertOutline (item ["source:outline"]);
-			
-			if (item.title == "I need a test outline") {
-				console.log ("item has a <source:outline> element: " + JSON.stringify (item ["source:outline"], undefined, 4));
+		try {
+			var item = this.read (), flnew;
+			if (item !== null) { //2/9/17 by DW
+				callback (item);
 				}
-			
 			}
-		callback (item);
+		catch (err) {
+			myConsoleLog ("getFeed: error == " + err.message);
+			}
 		});
 	feedparser.on ("end", function () {
 		console.log ("Feed really OK.");
@@ -183,8 +182,10 @@ function startup () {
 	console.log (myProductName + " v" + myVersion + " running on port " + myPort + ".");
 	console.log (""); 
 	getFeed (urlFeed, function (data) {
+		
+		console.log (data.title);
+		
 		addToRiver (urlFeed, data);
-		console.log (utils.jsonStringify (serverStats.lastStoryAdded));
 		});
 	}
 
