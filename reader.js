@@ -1,10 +1,12 @@
-var myVersion = "0.40c", myProductName = "nodeFeedDebug", myPort = 1388;  
+var myVersion = "0.4.2", myProductName = "nodeFeedDebug", myPort = 1388;  
 
 var http = require ("http"); 
 var FeedParser = require ("feedparser");
 var request = require ("request");
 var urlpack = require ("url");
-var utils = require ("./lib/utils.js");
+var utils = require ("daveutils");
+const Iconv = require ('iconv').Iconv;
+
 
 var config = {
 	maxBodyLength: 300,
@@ -20,8 +22,10 @@ var serverStats = {
 	};
 var flRiverChanged = false;
 
-var urlFeed = "http://scripting.com/rss.xml";
+var urlFeed = "https://www.presseportal.de/rss/dienststelle_110972.rss2";
 
+function done(err) {
+	}
 function getItemDescription (item) {
 	var s = item.description;
 	if (s == null) {
@@ -153,8 +157,33 @@ function getFeed (urlfeed, callback) {
 	req.on ("response", function (res) {
 		var stream = this;
 		if (res.statusCode == 200) {
-			console.log ("Feed read OK.");
-			stream.pipe (feedparser);
+			function maybeTranslate {
+				function getCharset (res) {
+					var str = res.headers ["content-type"] || '';
+					var params = str.split (';').reduce (function (params, param) {
+						var parts = param.split ('=').map (function (part) { 
+							return part.trim (); 
+							});
+						if (parts.length === 2) {
+							params [parts [0]] = parts [1];
+							}
+						return params;
+						}, {});
+					return (params.charset);
+					}
+				var charset = getCharset (res), iconv;
+				if (!iconv && charset && !/utf-*8/i.test(charset)) {
+					try {
+						iconv = new Iconv (charset, "utf-8");
+						res = res.pipe (iconv);
+						}
+					catch (err) {
+						res.emit ("error", err);
+						}
+					}
+				return res;
+				}
+			maybeTranslate (res).pipe (feedparser);
 			}
 		});
 	req.on ("error", function (res) {
@@ -178,9 +207,7 @@ function getFeed (urlfeed, callback) {
 		});
 	}
 function startup () {
-	console.log (""); console.log (""); console.log (""); 
-	console.log (myProductName + " v" + myVersion + " running on port " + myPort + ".");
-	console.log (""); 
+	console.log ("\n" + myProductName + " v" + myVersion + " running on port " + myPort + ".\n");
 	getFeed (urlFeed, function (data) {
 		
 		console.log (data.title);

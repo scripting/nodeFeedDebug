@@ -1,16 +1,18 @@
 {
 	"name": "nodeFeedDebug",
-	"description": "Reads a feed as River5 would, in a standalon app. Makes it easier to debug problems with the feed.",
+	"description": "Reads a feed as River5 would, in a standalon app. Makes it easier to debug problems with a feed.",
 	"author": "Dave Winer <dave@smallpicture.com>",
-	"version": "0.0.40", 
+	"version": "0.4.2", 
 	"scripts": {
 		"start": "node reader.js"
 		},
 	"dependencies" : {
+		"daveutils": "*",
+		"iconv": "*",
 		"request": "*",
 		"feedparser": "*"
 		}, 
 	"engines": {
-		"node": ">=0.8.x"
+		"node": "*"
 		}
 	}
