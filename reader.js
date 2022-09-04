@@ -157,31 +157,25 @@ function getFeed (urlfeed, callback) {
 	req.on ("response", function (res) {
 		var stream = this;
 		if (res.statusCode == 200) {
-			function maybeTranslate {
-				function getCharset (res) {
-					var str = res.headers ["content-type"] || '';
-					var params = str.split (';').reduce (function (params, param) {
-						var parts = param.split ('=').map (function (part) { 
-							return part.trim (); 
-							});
-						if (parts.length === 2) {
-							params [parts [0]] = parts [1];
+			function maybeTranslate (res) {
+				console.log ("maybeTranslate: res.headers == " + utils.jsonStringify (res.headers));
+				var contentType = res.headers ["content-type"];
+				if (contentType !== undefined) {
+					var encoding = utils.trimWhitespace (utils.stringNthField (contentType, ";", 2));
+					console.log ("maybeTranslate: encoding == " + encoding);
+					if (encoding.length > 0) {
+						var charset = utils.trimWhitespace (utils.stringNthField (encoding, "=", 2));
+						console.log ("maybeTranslate: charset == " + charset);
+						try {
+							var iconv = new Iconv (charset, "utf-8");
+							return (res.pipe (iconv));
 							}
-						return params;
-						}, {});
-					return (params.charset);
-					}
-				var charset = getCharset (res), iconv;
-				if (!iconv && charset && !/utf-*8/i.test(charset)) {
-					try {
-						iconv = new Iconv (charset, "utf-8");
-						res = res.pipe (iconv);
-						}
-					catch (err) {
-						res.emit ("error", err);
+						catch (err) {
+							console.log ("maybeTranslate: error piping through iconv, err.message == " + err.message);
+							}
 						}
 					}
-				return res;
+				return (res); //no translation
 				}
 			maybeTranslate (res).pipe (feedparser);
 			}
